@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Subsidi</title>
+
+<style>
+  :root {
+    --p:#6C2BD9; --p-light:#8B4FE8; --p-deep:#3D1280;
+    --p-glow:rgba(108,43,217,0.3); --p-subtle:rgba(108,43,217,0.1);
+    --dark:#08080E; --dark-2:#0F0F1A; --dark-3:#161622; --dark-4:#1E1E2E; --dark-5:#26263A;
+    --w:rgba(255,255,255,1); --w70:rgba(255,255,255,0.7); --w40:rgba(255,255,255,0.4);
+    --w15:rgba(255,255,255,0.08); --w08:rgba(255,255,255,0.04);
+    --green:#00C896; --gbg:rgba(0,200,150,0.08); --red:#E0415A;
+    --border:rgba(255,255,255,0.07);
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--dark);color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  .screen{display:none;position:fixed;inset:0;flex-direction:column;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .screen.active{display:flex;z-index:1;animation:reveal .35s cubic-bezier(.22,1,.36,1)}
+  @keyframes reveal{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── REGISTER ── */
+  #reg-screen{background:var(--dark);align-items:center;justify-content:center;padding:60px 28px 48px;position:relative;overflow:hidden}
+  .bg-glow{position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(108,43,217,.18) 0%,transparent 65%);pointer-events:none}
+  .wordmark{font-family:'Georgia',serif;font-style:italic;font-size:42px;letter-spacing:-.5px;text-align:center;margin-bottom:6px}
+  .wdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--p-light);margin-left:2px;vertical-align:middle;margin-bottom:8px}
+  .tagline{font-size:11px;color:var(--w40);text-align:center;letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;font-weight:500}
+
+  .reg-box{width:100%;max-width:360px}
+  .reg-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px}
+  .reg-sub{font-size:13px;color:var(--w40);text-align:center;margin-bottom:32px;line-height:1.5}
+
+  .reg-field{background:var(--dark-3);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:14px;transition:border-color .15s}
+  .reg-field:focus-within{border-color:var(--p)}
+  .reg-field-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--w40);font-weight:600;margin-bottom:6px}
+  .reg-field input{background:transparent;border:none;outline:none;color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:18px;font-weight:500;width:100%}
+  .reg-field input::placeholder{color:rgba(255,255,255,0.15)}
+
+  .reg-pin-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--w40);font-weight:600;text-align:center;margin-bottom:16px}
+  .reg-dots{display:flex;justify-content:center;gap:14px;margin-bottom:28px}
+  .dot{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);background:transparent;transition:all .18s cubic-bezier(.34,1.56,.64,1)}
+  .dot.on{background:var(--p-light);border-color:var(--p-light);transform:scale(1.15);box-shadow:0 0 14px var(--p-glow)}
+  .dot.err{background:var(--red);border-color:var(--red)}
+
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .key{background:var(--dark-3);border:1px solid var(--border);border-radius:18px;padding:20px 16px;text-align:center;cursor:pointer;transition:background .12s,transform .12s,border-color .12s;font-size:22px;font-weight:500;color:var(--w);user-select:none;display:flex;align-items:center;justify-content:center;min-height:64px}
+  .key:active{background:var(--p-deep);border-color:var(--p);transform:scale(.93)}
+  .key.ghost{background:transparent;border-color:transparent;cursor:default}
+
+  .reg-step{display:none}
+  .reg-step.active{display:block}
+  .reg-btn{width:100%;padding:18px;background:var(--p);border:none;border-radius:16px;color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:all .15s;margin-top:8px}
+  .reg-btn:active{background:var(--p-deep);transform:scale(.98)}
+  .reg-err{text-align:center;font-size:12px;color:var(--red);margin-top:10px;min-height:16px;opacity:0;transition:opacity .25s;font-weight:500}
+  .reg-err.show{opacity:1}
+  .pin-err{text-align:center;font-size:13px;color:var(--red);margin-top:18px;min-height:18px;opacity:0;transition:opacity .25s;font-weight:500}
+  .pin-err.show{opacity:1}
+
+  /* ── AD BANNER ── */
+  .ad-toast{
+    position:fixed;bottom:72px;left:12px;right:12px;
+    background:var(--dark-3);border:1px solid var(--border);
+    border-radius:14px;padding:14px 16px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:var(--w40);letter-spacing:.8px;text-transform:uppercase;font-weight:500;
+    min-height:56px;z-index:80;
+    transform:translateY(120px);opacity:0;
+    transition:transform .45s cubic-bezier(.22,1,.36,1),opacity .35s ease;
+  }
+  .ad-toast.show{transform:translateY(0);opacity:1}
+
+  /* ── DASHBOARD ── */
+  #dash{background:var(--dark);padding-bottom:90px;overflow-y:auto}
+  .header{background:var(--dark-2);padding:72px 24px 28px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+  .hglow{position:absolute;top:-100px;right:-80px;width:350px;height:350px;background:radial-gradient(circle,rgba(108,43,217,.14) 0%,transparent 70%);pointer-events:none}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;position:relative}
+  .brand{font-family:'Georgia',serif;font-style:italic;font-size:30px;letter-spacing:-.3px}
+  .bpip{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--p-light);margin-left:2px;vertical-align:middle;margin-bottom:6px}
+  .topbar-icons{display:flex;gap:10px;align-items:center}
+
+  .ci-icon{width:40px;height:40px;background:var(--dark-4);border:1px solid var(--p);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;box-shadow:0 0 12px var(--p-glow);animation:iconpulse 2.5s ease-in-out infinite;transition:all .15s}
+  .ci-icon:active{transform:scale(.93)}
+  @keyframes iconpulse{0%,100%{box-shadow:0 0 8px var(--p-glow)}50%{box-shadow:0 0 20px rgba(108,43,217,.5)}}
+  .ci-badge{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--dark-2);animation:blink 2s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .notif-icon{width:40px;height:40px;background:var(--dark-4);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+  .notif-icon:active{background:var(--dark-5)}
+
+  .bal-lbl{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--w40);margin-bottom:8px;font-weight:500}
+  .bal-amt{font-size:62px;font-weight:800;line-height:1;letter-spacing:-3px;margin-bottom:14px}
+  .bal-cur{font-size:30px;font-weight:700;color:var(--w40);vertical-align:super;margin-right:2px;letter-spacing:0}
+  .bal-dec{font-size:28px;font-weight:700;color:var(--w40)}
+  .badge{display:inline-flex;align-items:center;gap:7px;background:var(--gbg);border:1px solid rgba(0,200,150,.18);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--green);font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+  .pip{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2.4s ease-in-out infinite}
+
+  .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:20px 24px 0}
+  .act{background:var(--dark-3);border:1px solid var(--border);border-radius:16px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all .15s}
+  .act:active{background:var(--dark-5);transform:scale(.96)}
+  .act.main{background:var(--p);border-color:var(--p)}
+  .act.main:active{background:var(--p-deep)}
+  .act-ico{width:36px;height:36px;border-radius:10px;background:var(--w15);display:flex;align-items:center;justify-content:center}
+  .act.main .act-ico{background:rgba(255,255,255,.15)}
+  .act-lbl{font-size:11px;font-weight:600;color:var(--w40);letter-spacing:.3px}
+  .act.main .act-lbl{color:var(--w)}
+
+  .sec{padding:24px 24px 0}
+  .sec-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--w40);margin-bottom:14px}
+
+  .net-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .net{background:var(--dark-3);border:1.5px solid var(--border);border-radius:16px;padding:14px 6px;text-align:center;cursor:pointer;transition:all .15s}
+  .net:active{transform:scale(.94)}
+  .net.sel{background:var(--p-subtle);border-color:var(--p)}
+  .net-logo{width:32px;height:32px;border-radius:8px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+  .mtn{background:#FFCC00;color:#1A1A1A}.airt{background:#E0001A;color:#fff}.glo{background:#008000;color:#fff}.mob{background:#006633;color:#fff}
+  .net-n{font-size:10px;font-weight:600;color:var(--w40)}
+  .net.sel .net-n{color:var(--w70)}
+
+  .tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex-shrink:0;padding:9px 16px;border-radius:20px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--w40);transition:all .18s;background:var(--dark-3);border:1px solid var(--border)}
+  .tab.on{background:var(--p);border-color:var(--p);color:var(--w)}
+
+  .bundles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .bundle{background:var(--dark-3);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .15s;overflow:hidden}
+  .bundle:active{opacity:.8;transform:scale(.97)}
+  .b-val{font-size:9px;color:var(--w40);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;margin-top:14px;text-align:center}
+  .b-size{font-size:32px;font-weight:700;text-align:center;line-height:1}
+  .b-unit{font-size:14px;color:var(--w70);font-weight:600}
+  .b-price{font-size:16px;font-weight:700;color:var(--w);margin-top:8px;margin-bottom:14px;text-align:center}
+  .b-btn{width:100%;padding:10px 6px;background:var(--p);text-align:center;font-size:11px;font-weight:700;color:var(--w);letter-spacing:.5px;text-transform:uppercase;margin-top:auto}
+
+  .air-card{background:var(--dark-3);border:1px solid var(--border);border-radius:18px;padding:18px 20px;margin-bottom:12px}
+  .f-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--w40);font-weight:600;margin-bottom:8px}
+  .f-input{background:transparent;border:none;outline:none;color:var(--w);font-family:'Georgia',serif;font-size:32px;font-style:italic;width:100%}
+  .f-input::placeholder{color:var(--w15)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{background:var(--dark-3);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--w70);transition:all .15s}
+  .chip:active{background:var(--p-subtle);border-color:var(--p);color:var(--w)}
+
+  .ref-card{background:var(--dark-3);border:1px solid var(--border);border-radius:20px;padding:20px}
+  .ref-title{font-size:15px;font-weight:700;margin-bottom:4px}
+  .ref-sub{font-size:12px;color:var(--w40);margin-bottom:16px;line-height:1.5}
+  .ref-row{background:var(--dark-2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .ref-code{font-size:12px;font-weight:600;color:var(--p-light);letter-spacing:.8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .copy{background:var(--dark-4);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--w70);cursor:pointer;text-transform:uppercase;letter-spacing:.3px;transition:all .15s}
+  .copy:active{background:var(--p);color:#fff;border-color:var(--p)}
+
+  .dep-row{padding:16px 24px 0}
+  .dep-btn{width:100%;padding:16px;background:var(--p);border:none;border-radius:16px;color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:all .15s}
+  .dep-btn:active{background:var(--p-deep);transform:scale(.98)}
+
+  .bnav{position:fixed;bottom:0;left:0;right:0;background:var(--dark-2);border-top:1px solid var(--border);display:flex;padding:10px 0 22px;z-index:50}
+  .ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px}
+  .ni-ico{width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+  .ni-lbl{font-size:9px;font-weight:700;color:var(--w40);letter-spacing:.8px;text-transform:uppercase}
+  .ni.on .ni-lbl{color:var(--p-light)}
+
+  /* SUCCESS */
+  #success{align-items:center;justify-content:center;padding:48px 28px;text-align:center;background:var(--dark)}
+  .s-mark{width:88px;height:88px;border-radius:50%;background:var(--gbg);border:1.5px solid rgba(0,200,150,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 32px;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  .s-title{font-family:'Georgia',serif;font-size:34px;font-style:italic;margin-bottom:8px}
+  .s-body{font-size:14px;color:var(--w40);margin-bottom:8px;line-height:1.5}
+  .s-amt{font-family:'Georgia',serif;font-size:20px;color:var(--p-light);font-style:italic;margin-bottom:48px}
+  .done{width:100%;max-width:300px;padding:18px;background:var(--p);border:none;border-radius:16px;color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s}
+  .done:active{background:var(--p-deep)}
+
+  /* SHEET (buy details) */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:200;align-items:flex-end}
+  .overlay.open{display:flex}
+  .sheet{background:var(--dark-2);border:1px solid var(--border);border-radius:28px 28px 0 0;padding:10px 24px 44px;width:100%;animation:up .32s cubic-bezier(.22,1,.36,1)}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .sh-bar{width:36px;height:4px;background:var(--w15);border-radius:2px;margin:10px auto 24px}
+  .sh-title{font-family:'Georgia',serif;font-size:24px;font-style:italic;margin-bottom:4px}
+  .sh-sub{font-size:13px;color:var(--w40);margin-bottom:20px}
+  .ph-wrap{background:var(--dark-3);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:20px;transition:border-color .15s}
+  .ph-wrap:focus-within{border-color:var(--p)}
+  .ph-wrap input{background:transparent;border:none;outline:none;color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:20px;font-weight:500;width:100%}
+  .ph-wrap input::placeholder{color:var(--w15)}
+  .drow{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--w08)}
+  .drow:last-of-type{border:none;margin-bottom:16px}
+  .dk{font-size:13px;color:var(--w40)}
+  .dv{font-size:14px;font-weight:700}
+  .dv.ac{color:var(--p-light)}.dv.gr{color:var(--green)}
+  .cbtn{width:100%;padding:18px;background:var(--p);border:none;border-radius:16px;color:var(--w);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:all .15s}
+  .cbtn:active{background:var(--p-deep);transform:scale(.98)}
+
+  /* PIN MODAL (for purchase confirmation) */
+  .pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:300;align-items:flex-end}
+  .pin-overlay.open{display:flex}
+  .pin-sheet{background:var(--dark-2);border:1px solid var(--border);border-radius:28px 28px 0 0;padding:10px 28px 44px;width:100%;animation:up .32s cubic-bezier(.22,1,.36,1)}
+  .pin-sheet-bar{width:36px;height:4px;background:var(--w15);border-radius:2px;margin:10px auto 28px}
+  .pin-sheet-title{font-family:'Georgia',serif;font-size:22px;font-style:italic;text-align:center;margin-bottom:4px}
+  .pin-sheet-sub{font-size:12px;color:var(--w40);text-align:center;margin-bottom:28px;letter-spacing:.3px}
+  .pin-dots-row{display:flex;justify-content:center;gap:14px;margin-bottom:32px}
+  .pdot{width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);background:transparent;transition:all .18s cubic-bezier(.34,1.56,.64,1)}
+  .pdot.on{background:var(--p-light);border-color:var(--p-light);transform:scale(1.15);box-shadow:0 0 14px var(--p-glow)}
+  .pdot.err{background:var(--red);border-color:var(--red)}
+  .pin-sheet-err{text-align:center;font-size:12px;color:var(--red);margin-top:14px;min-height:16px;opacity:0;transition:opacity .25s;font-weight:500}
+  .pin-sheet-err.show{opacity:1}
+  .pin-cancel{width:100%;padding:14px;background:transparent;border:1px solid var(--border);border-radius:14px;color:var(--w40);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:12px;transition:all .15s}
+  .pin-cancel:active{background:var(--dark-3)}
+
+  .dep-opt{background:var(--dark-3);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;color:var(--w)}
+  .dep-opt:active{transform:scale(.96)}
+  .dep-opt.sel{background:var(--p-subtle);border-color:var(--p);color:var(--p-light)}
+
+  .spc{height:28px}
+
+
+</style>
+</head>
+<body>
+
+<!-- AD TOAST -->
+<div class="ad-toast" id="ad-toast">Sponsored</div>
+
+<!-- ── REGISTRATION SCREEN ── -->
+<div class="screen active" id="reg-screen">
+  <div class="bg-glow"></div>
+  <div class="wordmark">subsidi<span class="wdot"></span></div>
+  <div class="tagline">Data. Redefined.</div>
+
+  <div class="reg-box">
+
+    <!-- Step 1: Scan QR card -->
+    <div class="reg-step active" id="reg-step-2">
+      <div class="reg-title">Scan your Subsidi card</div>
+      <div class="reg-sub">Hold your card up to the camera — we'll set you up automatically</div>
+
+      <div style="position:relative;width:100%;border-radius:20px;overflow:hidden;margin-bottom:20px;background:var(--dark-3);border:1px solid var(--border);">
+        <video id="reg-video" style="width:100%;display:block;border-radius:20px;" autoplay playsinline muted></video>
+        <!-- Scanner frame -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="width:180px;height:180px;position:relative;">
+            <div style="position:absolute;top:0;left:0;width:36px;height:36px;border-top:3px solid var(--p-light);border-left:3px solid var(--p-light);border-radius:4px 0 0 0;"></div>
+            <div style="position:absolute;top:0;right:0;width:36px;height:36px;border-top:3px solid var(--p-light);border-right:3px solid var(--p-light);border-radius:0 4px 0 0;"></div>
+            <div style="position:absolute;bottom:0;left:0;width:36px;height:36px;border-bottom:3px solid var(--p-light);border-left:3px solid var(--p-light);border-radius:0 0 0 4px;"></div>
+            <div style="position:absolute;bottom:0;right:0;width:36px;height:36px;border-bottom:3px solid var(--p-light);border-right:3px solid var(--p-light);border-radius:0 0 4px 0;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="reg-scan-status" style="text-align:center;font-size:13px;color:var(--w40);margin-bottom:20px;">Starting camera...</div>
+      <div class="reg-err" id="reg-err-2"></div>
+    </div>
+
+    <!-- Step 3: Set PIN -->
+    <div class="reg-step" id="reg-step-3">
+      <div class="reg-title">Create your PIN</div>
+      <div class="reg-sub">This 4-digit PIN is how you'll confirm every data purchase</div>
+      <div class="reg-pin-lbl" id="reg-pin-lbl">Enter new PIN</div>
+      <div class="reg-dots" id="reg-pin-dots">
+        <div class="dot" id="rpd0"></div>
+        <div class="dot" id="rpd1"></div>
+        <div class="dot" id="rpd2"></div>
+        <div class="dot" id="rpd3"></div>
+      </div>
+      <div class="keypad">
+        <div class="key" onclick="regPinKey('1')">1</div>
+        <div class="key" onclick="regPinKey('2')">2</div>
+        <div class="key" onclick="regPinKey('3')">3</div>
+        <div class="key" onclick="regPinKey('4')">4</div>
+        <div class="key" onclick="regPinKey('5')">5</div>
+        <div class="key" onclick="regPinKey('6')">6</div>
+        <div class="key" onclick="regPinKey('7')">7</div>
+        <div class="key" onclick="regPinKey('8')">8</div>
+        <div class="key" onclick="regPinKey('9')">9</div>
+        <div class="key ghost"></div>
+        <div class="key" onclick="regPinKey('0')">0</div>
+        <div class="key" onclick="regPinDel()">⌫</div>
+      </div>
+      <div class="pin-err" id="reg-pin-err"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div class="screen" id="dash">
+  <div class="header">
+    <div class="hglow"></div>
+    <div class="topbar">
+      <div class="brand">subsidi<span class="bpip"></span></div>
+      <div class="topbar-icons">
+        
+        <div class="notif-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bal-lbl">Wallet Balance</div>
+    <div class="bal-amt" id="bal-display"><span class="bal-cur">₦</span>500<span class="bal-dec">.00</span></div>
+    <div class="badge" id="card-badge" onclick="badgeTap()"><span class="pip"></span>Card Active</div>
+  </div>
+
+  <div class="actions">
+    <div class="act main" onclick="showDep()">
+      <div class="act-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+        </svg>
+      </div>
+      <span class="act-lbl">Deposit</span>
+    </div>
+    <div class="act" onclick="togRef()">
+      <div class="act-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </div>
+      <span class="act-lbl">Refer</span>
+    </div>
+    <div class="act">
+      <div class="act-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <span class="act-lbl">History</span>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Network</div>
+    <div class="net-grid">
+      <div class="net sel" onclick="selNet(this,'MTN')"><div class="net-logo mtn">MTN</div><div class="net-n">MTN</div></div>
+      <div class="net" onclick="selNet(this,'Airtel')"><div class="net-logo airt">AIR</div><div class="net-n">Airtel</div></div>
+      <div class="net" onclick="selNet(this,'Glo')"><div class="net-logo glo">GLO</div><div class="net-n">Glo</div></div>
+      <div class="net" onclick="selNet(this,'9mobile')"><div class="net-logo mob">9MB</div><div class="net-n">9mobile</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="tabs">
+      <div class="tab on"  onclick="swTab(this,'daily')">Daily</div>
+      <div class="tab" onclick="swTab(this,'weekly')">Weekly</div>
+      <div class="tab" onclick="swTab(this,'monthly')">Monthly</div>
+      <div class="tab" onclick="swTab(this,'social')">Social</div>
+      <div class="tab" onclick="swTab(this,'night')">Night</div>
+    </div>
+
+    <!-- DAILY -->
+    <div id="tab-daily" class="plantab">
+      <div class="bundles">
+        <div class="bundle" onclick="openSheet('100 MB','1 day',50,80)">
+          <div class="b-val">1 Day</div><div class="b-size">100<span class="b-unit">MB</span></div>
+          <div class="b-orig">₦80</div><div class="b-price">₦50</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('200 MB','1 day',85,120)">
+          <div class="b-val">1 Day</div><div class="b-size">200<span class="b-unit">MB</span></div>
+          <div class="b-orig">₦120</div><div class="b-price">₦85</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('500 MB','1 day',150,200)">
+          <div class="b-val">1 Day</div><div class="b-size">500<span class="b-unit">MB</span></div>
+          <div class="b-orig">₦200</div><div class="b-price">₦150</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('1 GB','1 day',250,320)">
+          <div class="b-val">1 Day</div><div class="b-size">1<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦320</div><div class="b-price">₦250</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('2 GB','1 day',400,500)">
+          <div class="b-val">1 Day</div><div class="b-size">2<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦500</div><div class="b-price">₦400</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('3 GB','1 day',550,700)">
+          <div class="b-val">1 Day</div><div class="b-size">3<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦700</div><div class="b-price">₦550</div><div class="b-btn">Best Price</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKLY -->
+    <div id="tab-weekly" class="plantab" style="display:none">
+      <div class="bundles">
+        <div class="bundle" onclick="openSheet('500 MB','7 days',200,250)">
+          <div class="b-val">7 Days</div><div class="b-size">500<span class="b-unit">MB</span></div>
+          <div class="b-orig">₦250</div><div class="b-price">₦200</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('1 GB','7 days',285,350)">
+          <div class="b-val">7 Days</div><div class="b-size">1<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦350</div><div class="b-price">₦285</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('2 GB','7 days',500,650)">
+          <div class="b-val">7 Days</div><div class="b-size">2<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦650</div><div class="b-price">₦500</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('3 GB','7 days',820,1000)">
+          <div class="b-val">7 Days</div><div class="b-size">3<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦1,000</div><div class="b-price">₦820</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('5 GB','7 days',1100,1400)">
+          <div class="b-val">7 Days</div><div class="b-size">5<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦1,400</div><div class="b-price">₦1,100</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('10 GB','7 days',1900,2400)">
+          <div class="b-val">7 Days</div><div class="b-size">10<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦2,400</div><div class="b-price">₦1,900</div><div class="b-btn">Best Price</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div id="tab-monthly" class="plantab" style="display:none">
+      <div class="bundles">
+        <div class="bundle" onclick="openSheet('1 GB','30 days',390,480)">
+          <div class="b-val">30 Days</div><div class="b-size">1<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦480</div><div class="b-price">₦390</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('2 GB','30 days',700,900)">
+          <div class="b-val">30 Days</div><div class="b-size">2<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦900</div><div class="b-price">₦700</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('5 GB','30 days',1500,1900)">
+          <div class="b-val">30 Days</div><div class="b-size">5<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦1,900</div><div class="b-price">₦1,500</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('10 GB','30 days',2600,3200)">
+          <div class="b-val">30 Days</div><div class="b-size">10<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦3,200</div><div class="b-price">₦2,600</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('15 GB','30 days',2900,3600)">
+          <div class="b-val">30 Days</div><div class="b-size">15<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦3,600</div><div class="b-price">₦2,900</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('20 GB','30 days',3400,4200)">
+          <div class="b-val">30 Days</div><div class="b-size">20<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦4,200</div><div class="b-price">₦3,400</div><div class="b-btn">Best Price</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOCIAL -->
+    <div id="tab-social" class="plantab" style="display:none">
+      <div class="bundles">
+        <div class="bundle" onclick="openSheet('WhatsApp 1GB','7 days',150,200)">
+          <div class="b-val">7 Days</div><div class="b-size" style="font-size:20px;padding:0 4px">WhatsApp</div>
+          <div class="b-orig">₦200</div><div class="b-price">₦150</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('Instagram 1GB','7 days',150,200)">
+          <div class="b-val">7 Days</div><div class="b-size" style="font-size:20px;padding:0 4px">Instagram</div>
+          <div class="b-orig">₦200</div><div class="b-price">₦150</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('TikTok 1GB','7 days',150,200)">
+          <div class="b-val">7 Days</div><div class="b-size" style="font-size:20px;padding:0 4px">TikTok</div>
+          <div class="b-orig">₦200</div><div class="b-price">₦150</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('Twitter 1GB','7 days',150,200)">
+          <div class="b-val">7 Days</div><div class="b-size" style="font-size:20px;padding:0 4px">Twitter/X</div>
+          <div class="b-orig">₦200</div><div class="b-price">₦150</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('Social Bundle 2GB','30 days',400,550)">
+          <div class="b-val">30 Days</div><div class="b-size" style="font-size:17px;padding:0 4px">All Social</div>
+          <div class="b-orig">₦550</div><div class="b-price">₦400</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('YouTube 3GB','7 days',350,450)">
+          <div class="b-val">7 Days</div><div class="b-size" style="font-size:20px;padding:0 4px">YouTube</div>
+          <div class="b-orig">₦450</div><div class="b-price">₦350</div><div class="b-btn">Best Price</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIGHT -->
+    <div id="tab-night" class="plantab" style="display:none">
+      <div class="bundles">
+        <div class="bundle" onclick="openSheet('1 GB','12am–5am',95,150)">
+          <div class="b-val">12am – 5am</div><div class="b-size">1<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦150</div><div class="b-price">₦95</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('2 GB','12am–5am',170,250)">
+          <div class="b-val">12am – 5am</div><div class="b-size">2<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦250</div><div class="b-price">₦170</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('5 GB','12am–5am',350,500)">
+          <div class="b-val">12am – 5am</div><div class="b-size">5<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦500</div><div class="b-price">₦350</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('10 GB','12am–5am',600,900)">
+          <div class="b-val">12am – 5am</div><div class="b-size">10<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦900</div><div class="b-price">₦600</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('15 GB','12am–5am',850,1200)">
+          <div class="b-val">12am – 5am</div><div class="b-size">15<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦1,200</div><div class="b-price">₦850</div><div class="b-btn">Best Price</div>
+        </div>
+        <div class="bundle" onclick="openSheet('25 GB','12am–5am',1300,1800)">
+          <div class="b-val">12am – 5am</div><div class="b-size">25<span class="b-unit">GB</span></div>
+          <div class="b-orig">₦1,800</div><div class="b-price">₦1,300</div><div class="b-btn">Best Price</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" id="refblock" style="display:none">
+    <div class="ref-card">
+      <div class="ref-title">Refer & Earn ₦500</div>
+      <div class="ref-sub">Share your link. When a friend purchases a Subsidi card, ₦500 is credited to your wallet instantly.</div>
+      <div class="ref-row">
+        <div class="ref-code" id="ref-link">subsidi.app/ref/USER</div>
+        <div class="copy" id="copybtn" onclick="doCopy()">Copy</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dep-row">
+    <button class="dep-btn" onclick="showDep()">Deposit</button>
+  </div>
+
+  <div class="spc"></div>
+
+  <div class="bnav">
+    <div class="ni on">
+      <div class="ni-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B4FE8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <span class="ni-lbl">Home</span>
+    </div>
+    <div class="ni">
+      <div class="ni-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <span class="ni-lbl">History</span>
+    </div>
+    <div class="ni">
+      <div class="ni-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </div>
+      <span class="ni-lbl">Refer</span>
+    </div>
+    <div class="ni">
+      <div class="ni-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <span class="ni-lbl">Account</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUCCESS ── -->
+<div class="screen" id="success">
+  <div class="s-mark">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00C896" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="s-title">Purchase Successful</div>
+  <div class="s-body" id="sbody">Data delivered successfully.</div>
+  <div class="s-amt" id="samt">₦265 deducted</div>
+  <button class="done" onclick="goHome()">Back to Home</button>
+</div>
+
+<!-- ── CARD EXPIRED MODAL ── -->
+<div class="overlay" id="expired-ov">
+  <div class="sheet" style="text-align:center;padding:28px 24px 44px;">
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(224,65,90,0.1);border:1.5px solid rgba(224,65,90,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E0415A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+        <line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+    </div>
+    <div style="font-family:'Georgia',serif;font-size:22px;font-style:italic;margin-bottom:8px;">Card Expired</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:6px;">Your Subsidi card has expired.</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:28px;">₦200 will be deducted from your wallet to reactivate your card.</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cancelReactivate()" style="flex:1;padding:16px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:rgba(255,255,255,0.5);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="reactivateCard()" style="flex:1;padding:16px;background:var(--p);border:none;border-radius:14px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Ok, Reactivate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DEPOSIT SHEET ── -->
+<div class="overlay" id="dep-ov" onclick="closeDepOv(event)">
+  <div class="sheet">
+    <div class="sh-bar"></div>
+    <div class="sh-title">Top Up Wallet</div>
+    <div class="sh-sub">Select an amount to add to your balance</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div onclick="selectDep(this,500)"  class="dep-opt">₦500</div>
+      <div onclick="selectDep(this,1000)" class="dep-opt">₦1,000</div>
+      <div onclick="selectDep(this,2000)" class="dep-opt">₦2,000</div>
+      <div onclick="selectDep(this,5000)" class="dep-opt">₦5,000</div>
+      <div onclick="selectDep(this,10000)" class="dep-opt" style="grid-column:span 2;">₦10,000</div>
+    </div>
+    <button class="cbtn" id="dep-confirm-btn" onclick="confirmDep()" style="opacity:.4;pointer-events:none;">Add to Wallet</button>
+  </div>
+</div>
+
+<!-- ── BUY SHEET ── -->
+<div class="overlay" id="ov" onclick="closeOv(event)">
+  <div class="sheet">
+    <div class="sh-bar"></div>
+    <div class="sh-title" id="shtitle">Buy 1 GB Data</div>
+    <div class="sh-sub" id="shsub">MTN · 7 days</div>
+    <div class="ph-wrap">
+      <div class="f-lbl">Phone Number</div>
+      <input type="tel" placeholder="080xxxxxxxx" id="phinput" maxlength="11">
+    </div>
+    <div class="drow"><span class="dk">You pay</span><span class="dv ac" id="dprice">₦285</span></div>
+    <button class="cbtn" onclick="confirmBuy()">Confirm Purchase</button>
+  </div>
+</div>
+
+<!-- ── PIN ENTRY OVERLAY (purchase) ── -->
+<div class="overlay" id="pin-buy-ov">
+  <div class="sheet" style="padding:28px 24px 44px;">
+    <div class="sh-bar"></div>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-family:'Georgia',serif;font-size:22px;font-style:italic;margin-bottom:6px;">Enter your PIN</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);">Confirm your identity to continue</div>
+    </div>
+    <div class="reg-pin-lbl" id="buy-pin-lbl">4-digit PIN</div>
+    <div class="reg-dots" style="margin-bottom:28px;">
+      <div class="dot" id="bpd0"></div>
+      <div class="dot" id="bpd1"></div>
+      <div class="dot" id="bpd2"></div>
+      <div class="dot" id="bpd3"></div>
+    </div>
+    <div class="keypad">
+      <div class="key" onclick="buyPinKey('1')">1</div>
+      <div class="key" onclick="buyPinKey('2')">2</div>
+      <div class="key" onclick="buyPinKey('3')">3</div>
+      <div class="key" onclick="buyPinKey('4')">4</div>
+      <div class="key" onclick="buyPinKey('5')">5</div>
+      <div class="key" onclick="buyPinKey('6')">6</div>
+      <div class="key" onclick="buyPinKey('7')">7</div>
+      <div class="key" onclick="buyPinKey('8')">8</div>
+      <div class="key" onclick="buyPinKey('9')">9</div>
+      <div class="key ghost"></div>
+      <div class="key" onclick="buyPinKey('0')">0</div>
+      <div class="key" onclick="buyPinDel()">⌫</div>
+    </div>
+    <div class="pin-err" id="buy-pin-err"></div>
+    <button class="pin-cancel" onclick="closePinBuy()" style="margin-top:16px;">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+  // ── State ──
+  let NET = 'MTN', cur = {};
+  let balance = 1000;
+  let cardActive = true;
+  let cardTimer = null;
+  let registeredCard = null;
+  let cardSecret = null;
+  let userPin = null;
+  let username = '';
+
+  // ── QR Scanner state (registration only) ──
+  let regStream = null;
+  let regScanLoop = null;
+
+  // ── Registration PIN state ──
+  let regPinEntry = '';
+  let regPinConfirm = '';
+  let regPinStage = 'enter';
+
+  // ── Buy PIN state ──
+  let buyPinEntry = '';
+
+  // ── Balance ──
+  function updateBalance(amount) {
+    balance -= amount;
+    if (balance < 0) balance = 0;
+    const whole = Math.floor(balance).toLocaleString();
+    const dec = (balance % 1).toFixed(2).slice(1);
+    document.getElementById('bal-display').innerHTML =
+      '<span class="bal-cur">₦</span>' + whole + '<span class="bal-dec">' + dec + '</span>';
+  }
+
+  // ── Extract 4-digit secret from 10-digit code ──
+  // Always picks positions 1, 4, 6, 9 (0-indexed) — only the app knows this
+  function extractSecret(code10) {
+    return code10[1] + code10[4] + code10[6] + code10[9];
+  }
+
+  // ── Generate username from card code ──
+  const adjectives = ['swift','calm','bold','bright','cool','sharp','kind','wise','quick','pure'];
+  const nouns = ['star','wave','flame','stone','spark','cloud','river','hawk','peak','grove'];
+  function generateUsername(code10) {
+    const idx1 = parseInt(code10[0]) % adjectives.length;
+    const idx2 = parseInt(code10[9]) % nouns.length;
+    const suffix = code10.slice(7, 10);
+    return adjectives[idx1] + nouns[idx2] + suffix;
+  }
+
+  function showErr(el, msg) {
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  // ── Registration QR Scanner — auto-starts on page load ──
+  window.addEventListener("load", () => { startRegScan(); });
+
+  async function startRegScan() {
+    try {
+      regStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const video = document.getElementById('reg-video');
+      video.srcObject = regStream;
+      video.play();
+      document.getElementById('reg-scan-status').textContent = 'Camera active — scan your card';
+      scanRegFrame();
+    } catch (e) {
+      document.getElementById('reg-scan-status').textContent = '⚠️ Camera blocked. Tap "Try Again" after allowing camera in your browser settings.';
+      const existing = document.getElementById('reg-try-again');
+      if (!existing) {
+        const btn = document.createElement('button');
+        btn.id = 'reg-try-again';
+        btn.className = 'reg-btn';
+        btn.textContent = 'Try Again';
+        btn.style.marginTop = '12px';
+        btn.onclick = startRegScan;
+        document.getElementById('reg-err-2').after(btn);
+      }
+    }
+  }
+
+  // Auto-start camera when page loads
+  // auto start handled below
+
+  function scanRegFrame() {
+    const video = document.getElementById('reg-video');
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code && code.data.length === 10 && /^\d{10}$/.test(code.data)) {
+        stopStream(regStream);
+        clearTimeout(regScanLoop);
+        registeredCard = code.data;
+        cardSecret = extractSecret(code.data);
+        username = generateUsername(code.data);
+        document.getElementById('ref-link').textContent = 'subsidi.app/ref/' + username;
+        document.getElementById('reg-scan-status').textContent = '✓ Card linked!';
+        setTimeout(goRegStep3, 600);
+        return;
+      }
+    }
+    regScanLoop = setTimeout(scanRegFrame, 200);
+  }
+
+  function stopStream(stream) {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+  }
+
+  // ── Registration Step 3: Set PIN ──
+  function goRegStep3() {
+    regPinEntry = ''; regPinConfirm = ''; regPinStage = 'enter';
+    document.getElementById('reg-step-2').classList.remove('active');
+    document.getElementById('reg-step-3').classList.add('active');
+    document.getElementById('reg-pin-lbl').textContent = 'Enter new PIN';
+    updateRegPinDots('');
+  }
+
+  function updateRegPinDots(val) {
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById('rpd' + i);
+      d.classList.toggle('on', i < val.length);
+      d.classList.remove('err');
+    }
+  }
+
+  function regPinKey(k) {
+    const current = regPinStage === 'enter' ? regPinEntry : regPinConfirm;
+    if (current.length >= 4) return;
+    if (regPinStage === 'enter') {
+      regPinEntry += k;
+      updateRegPinDots(regPinEntry);
+      if (regPinEntry.length === 4) setTimeout(regPinNext, 300);
+    } else {
+      regPinConfirm += k;
+      updateRegPinDots(regPinConfirm);
+      if (regPinConfirm.length === 4) setTimeout(regPinSubmit, 300);
+    }
+  }
+
+  function regPinDel() {
+    if (regPinStage === 'enter') {
+      regPinEntry = regPinEntry.slice(0, -1);
+      updateRegPinDots(regPinEntry);
+    } else {
+      regPinConfirm = regPinConfirm.slice(0, -1);
+      updateRegPinDots(regPinConfirm);
+    }
+  }
+
+  function regPinNext() {
+    regPinStage = 'confirm';
+    regPinConfirm = '';
+    document.getElementById('reg-pin-lbl').textContent = 'Confirm PIN';
+    updateRegPinDots('');
+  }
+
+  function regPinSubmit() {
+    if (regPinEntry !== regPinConfirm) {
+      const err = document.getElementById('reg-pin-err');
+      err.textContent = 'PINs do not match. Try again.';
+      err.classList.add('show');
+      for (let i = 0; i < 4; i++) document.getElementById('rpd' + i).classList.add('err');
+      setTimeout(() => {
+        err.classList.remove('show');
+        regPinEntry = ''; regPinConfirm = ''; regPinStage = 'enter';
+        document.getElementById('reg-pin-lbl').textContent = 'Enter new PIN';
+        updateRegPinDots('');
+      }, 1500);
+      return;
+    }
+    userPin = regPinEntry;
+    finishReg();
+  }
+
+  function finishReg() {
+    show('dash');
+    startCardTimer();
+    setTimeout(() => {
+      const t = document.getElementById('ad-toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 5000);
+    }, 600);
+  }
+
+  // ── Buy: open buy sheet directly ──
+  function openSheet(size, val, price, orig) {
+    const actualPrice = cardActive ? price : orig;
+    cur = { size, val, price: actualPrice, orig };
+    document.getElementById('shtitle').textContent = 'Buy ' + size + ' Data';
+    document.getElementById('shsub').textContent = NET + ' · ' + val;
+    document.getElementById('dprice').textContent = '₦' + actualPrice.toLocaleString();
+    document.getElementById('phinput').value = '';
+    document.getElementById('ov').classList.add('open');
+  }
+
+  function updateBuyPinDots(val) {
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById('bpd' + i);
+      d.classList.toggle('on', i < val.length);
+      d.classList.remove('err');
+    }
+  }
+
+  function buyPinKey(k) {
+    if (buyPinEntry.length >= 4) return;
+    buyPinEntry += k;
+    updateBuyPinDots(buyPinEntry);
+    if (buyPinEntry.length === 4) setTimeout(checkBuyPin, 300);
+  }
+
+  function buyPinDel() {
+    buyPinEntry = buyPinEntry.slice(0, -1);
+    updateBuyPinDots(buyPinEntry);
+  }
+
+  function checkBuyPin() {
+    if (buyPinEntry === userPin) {
+      document.getElementById('pin-buy-ov').classList.remove('open');
+      document.getElementById('ov').classList.remove('open');
+      const ph2 = document.getElementById('phinput').value || 'your number';
+      updateBalance(cur.price);
+      document.getElementById('sbody').textContent = cur.size + ' delivered to ' + ph2;
+      document.getElementById('samt').textContent = '₦' + cur.price.toLocaleString() + ' deducted';
+      show('success');
+    } else {
+      const err = document.getElementById('buy-pin-err');
+      err.textContent = 'Incorrect PIN. Try again.';
+      err.classList.add('show');
+      for (let i = 0; i < 4; i++) document.getElementById('bpd' + i).classList.add('err');
+      setTimeout(() => {
+        err.classList.remove('show');
+        buyPinEntry = '';
+        updateBuyPinDots('');
+      }, 1500);
+    }
+  }
+
+  function closePinBuy() {
+    document.getElementById('pin-buy-ov').classList.remove('open');
+  }
+
+  // ── Screen navigation ──
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ── Network selector ──
+  function selNet(el, n) {
+    document.querySelectorAll('.net').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel'); NET = n;
+  }
+
+  // ── Tab switcher ──
+  function swTab(el, t) {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+    el.classList.add('on');
+    document.querySelectorAll('.plantab').forEach(p => p.style.display = 'none');
+    document.getElementById('tab-' + t).style.display = 'block';
+  }
+
+
+
+  function closeOv(e) {
+    if (e.target === document.getElementById('ov')) document.getElementById('ov').classList.remove('open');
+  }
+
+  function confirmBuy() {
+    const ph = document.getElementById('phinput').value;
+    if (ph.length < 11) {
+      document.getElementById('phinput').style.outline = '2px solid var(--red)';
+      setTimeout(() => { document.getElementById('phinput').style.outline = ''; }, 1500);
+      return;
+    }
+    // Phone valid — ask for PIN to authorize
+    buyPinEntry = '';
+    updateBuyPinDots('');
+    document.getElementById('buy-pin-err').classList.remove('show');
+    document.getElementById('buy-pin-lbl').textContent = '4-digit PIN';
+    document.getElementById('pin-buy-ov').classList.add('open');
+  }
+
+  
+  // ── Card expiry ──
+  function startCardTimer() {
+    cardTimer = setTimeout(() => {
+      cardActive = false;
+      showExpiredModal();
+    }, 28 * 24 * 60 * 60 * 1000);
+  }
+
+  function badgeTap() { if (!cardActive) showExpiredModal(); }
+
+  function showExpiredModal() {
+    document.getElementById('expired-ov').classList.add('open');
+  }
+
+  function reactivateCard() {
+    updateBalance(200);
+    cardActive = true;
+    document.getElementById('expired-ov').classList.remove('open');
+    const badge = document.getElementById('card-badge');
+    badge.innerHTML = '<span class="pip"></span>Card Active';
+    badge.style.background = 'var(--gbg)';
+    badge.style.borderColor = 'rgba(0,200,150,.18)';
+    badge.style.color = 'var(--green)';
+    badge.style.cursor = 'default';
+    document.querySelectorAll('.b-btn').forEach(b => b.textContent = 'Best Price');
+    document.querySelectorAll('.bundle').forEach(bundle => {
+      const oc = bundle.getAttribute('onclick') || '';
+      const m = oc.match(/,(\d+),(\d+)\)/);
+      if (m) { const el = bundle.querySelector('.b-price'); if (el) el.textContent = '₦' + parseInt(m[1]).toLocaleString(); }
+    });
+  }
+
+  function cancelReactivate() {
+    document.getElementById('expired-ov').classList.remove('open');
+    cardActive = false;
+    const badge = document.getElementById('card-badge');
+    badge.innerHTML = '<span class="pip" style="background:var(--red)"></span>Card Expired — Tap to reactivate';
+    badge.style.background = 'rgba(224,65,90,0.08)';
+    badge.style.borderColor = 'rgba(224,65,90,0.18)';
+    badge.style.color = 'var(--red)';
+    badge.style.cursor = 'pointer';
+    document.querySelectorAll('.bundle').forEach(bundle => {
+      const oc = bundle.getAttribute('onclick') || '';
+      const m = oc.match(/,(\d+),(\d+)\)/);
+      if (m) { const el = bundle.querySelector('.b-price'); if (el) el.textContent = '₦' + parseInt(m[2]).toLocaleString(); }
+    });
+    document.querySelectorAll('.b-btn').forEach(b => b.textContent = 'Market Price');
+  }
+
+  // ── Deposit ──
+  let selectedDep = 0;
+
+  function showDep() {
+    selectedDep = 0;
+    document.querySelectorAll('.dep-opt').forEach(o => o.classList.remove('sel'));
+    const btn = document.getElementById('dep-confirm-btn');
+    btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+    btn.textContent = 'Add to Wallet';
+    document.getElementById('dep-ov').classList.add('open');
+  }
+
+  function selectDep(el, amt) {
+    document.querySelectorAll('.dep-opt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    selectedDep = amt;
+    const btn = document.getElementById('dep-confirm-btn');
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+    btn.textContent = 'Add ₦' + amt.toLocaleString() + ' to Wallet';
+  }
+
+  function confirmDep() {
+    if (!selectedDep) return;
+    document.getElementById('dep-ov').classList.remove('open');
+    updateBalance(-selectedDep);
+    selectedDep = 0;
+  }
+
+  function closeDepOv(e) {
+    if (e.target === document.getElementById('dep-ov')) document.getElementById('dep-ov').classList.remove('open');
+  }
+
+  function goHome() { show('dash'); }
+</script>
+</body>
+</html>
